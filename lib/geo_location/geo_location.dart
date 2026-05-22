@@ -11,89 +11,67 @@ class GeoLocation extends StatefulWidget {
   State<GeoLocation> createState() => _GeoLocationState();
 }
 
-LatLng _mapCenter = const LatLng(23.86173302501156, 90.34820297765826);
+LatLng _mapCenter = const LatLng(23.7216771, 90.4165835);
 GoogleMapController? _googleMapController;
-
 final Set<Marker> _markers = {};
+final Set<Polyline> _polylines = {};
+final List<LatLng> _polylinePoints = [];
 
 class _GeoLocationState extends State<GeoLocation> {
+  Timer? _timer;
 
   Future<void> checkpermission() async {
     final permission = await Geolocator.checkPermission();
+
     log(permission.toString());
   }
 
   Future<void> requestpermission() async {
     final permission = await Geolocator.requestPermission();
+
     log(permission.toString());
   }
 
   Future<void> userLocation() async {
     final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
+    LatLng currentPosition = LatLng(pos.latitude, pos.longitude);
+    _polylinePoints.add(currentPosition);
 
     setState(() {
-      _mapCenter = LatLng(pos.latitude, pos.longitude);
-
+      _mapCenter = currentPosition;
       _markers.clear();
       _markers.add(
         Marker(
           markerId: const MarkerId('1'),
+
           position: _mapCenter,
-          infoWindow: const InfoWindow(title: 'My location'),
+
+          infoWindow: InfoWindow(
+            title: 'My Current Location',
+
+            snippet: '${pos.latitude}, ${pos.longitude}',
+          ),
         ),
       );
-
-      _googleMapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(_mapCenter, 15),
+      _polylines.clear();
+      _polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: _polylinePoints,
+          visible: true,
+          color: Colors.blue,
+          width: 5,
+          endCap: Cap.roundCap,
+          startCap: Cap.squareCap,
+          jointType: JointType.round,
+        ),
       );
     });
-  }
-
-  bool _isStreaming = false;
-  StreamSubscription<Position>? _positionStream;
-
-  void toggleStream() {
-    if (_isStreaming) {
-      _positionStream?.cancel();
-      setState(() {
-        _isStreaming = false;
-      });
-    } else {
-      setState(() {
-        _isStreaming = true;
-      });
-      _positionStream = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 5,
-        ),
-      ).listen((pos) {
-
-        log(pos.toString());
-        final posLatLng = LatLng(pos.latitude, pos.longitude);
-
-        setState(() {
-          _mapCenter = posLatLng;
-
-          _markers.clear();
-          _markers.add(
-            Marker(
-              markerId: const MarkerId('1'),
-              position: _mapCenter,
-              infoWindow: const InfoWindow(title: 'My location'),
-            ),
-          );
-        });
-
-        _googleMapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(_mapCenter, 15),
-        );
-      });
-    }
+    _googleMapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(_mapCenter, 16),
+    );
   }
 
   @override
@@ -102,42 +80,45 @@ class _GeoLocationState extends State<GeoLocation> {
     checkpermission();
     requestpermission();
     userLocation();
-  }
-
-  @override
-  void dispose() {
-    _positionStream?.cancel();
-    super.dispose();
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      userLocation();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Geo location'),
+        backgroundColor: Colors.blue,
+        title: const Text(
+          'Real-Time Location Tracker',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 500,
-            child: GoogleMap(
-              onMapCreated: (c) => _googleMapController = c,
-              initialCameraPosition: CameraPosition(
-                target: _mapCenter,
-                zoom: 12,
-              ),
-              markers: _markers,
-              myLocationEnabled: true,
-              zoomControlsEnabled: false,
-            ),
-          ),
 
-          ElevatedButton(
-            onPressed: toggleStream,
-            child: Text(_isStreaming ? 'Stop' : 'Stream'),
-          )
-        ],
+      body: GoogleMap(
+        onMapCreated: (c) {
+          _googleMapController = c;
+        },
+        initialCameraPosition: CameraPosition(target: _mapCenter, zoom: 12),
+        markers: _markers,
+        polylines: _polylines,
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        zoomControlsEnabled: true,
+        trafficEnabled: true,
+
+
       ),
+
+
+
     );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }

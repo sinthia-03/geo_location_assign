@@ -84,7 +84,6 @@ class _GeoLocationState extends State<GeoLocation> {
       userLocation();
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,11 +107,7 @@ class _GeoLocationState extends State<GeoLocation> {
         zoomControlsEnabled: true,
         trafficEnabled: true,
 
-
       ),
-
-
-
     );
   }
 

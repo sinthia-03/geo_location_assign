@@ -90,26 +90,6 @@ class _GoogleMapsState extends State<GoogleMaps> {
             jointType: JointType.round,
           ),
         },
-
-        circles: {
-          Circle(
-            circleId: const CircleId('zone-1'),
-            center: const LatLng(23.859585131166856, 90.34440368413925),
-            radius: 100,
-            strokeWidth: 3,
-            strokeColor: Colors.orange,
-            fillColor: Colors.yellowAccent,
-          ),
-        },
-        polygons: {
-          Polygon(
-            polygonId: const PolygonId('zone'),
-            points: const [
-              LatLng(23.857493943637614, 90.35158026963472),
-              LatLng(23.857193141012246, 90.34465245902538),
-            ],
-          ),
-        },
       ),
     );
   }
